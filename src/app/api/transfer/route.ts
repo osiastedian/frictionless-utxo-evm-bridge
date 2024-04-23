@@ -1,3 +1,4 @@
+import { createTransfer } from "@/service/transfer";
 import { getDepositMultisigWallet } from "@/utils/utxo";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -9,13 +10,19 @@ export async function GET() {
 type RegisterTransferPayload = {
   recipient: string;
   refund: string;
-  deposit: string;
+  amount: number;
 };
 
 export async function POST(request: NextRequest) {
   const data: RegisterTransferPayload = await request.json();
 
-  const { deposit, recipient, refund } = data;
+  const { recipient, refund, amount } = data;
 
-  return NextResponse.json({ deposit, recipient, refund });
+  const transfer = await createTransfer({
+    amount,
+    recipientAddress: recipient,
+    refundAddress: refund,
+  });
+
+  return NextResponse.json(transfer);
 }
