@@ -17,7 +17,8 @@ type CreateTransferParams = {
 
 export const createTransfer = async (params: CreateTransferParams) => {
   const prisma = new PrismaClient();
-  const utxoWallet = getDepositMultisigWallet();
+  const count = await prisma.transfer.count();
+  const utxoWallet = getDepositMultisigWallet(count);
 
   const transfer = await prisma.transfer.create({
     data: {

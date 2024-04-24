@@ -15,12 +15,12 @@ datasource db {
 
 model Transfer {
   id                     String   @id @default(uuid())
-  depositAddress         String
-  depositTransactionHash String?
+  depositAddress         String   @unique
+  depositTransactionHash String?  @unique
   refundAddress          String
-  refundTransactionHash  String?
+  refundTransactionHash  String?  @unique
   recipientAddress       String
-  receiptTransactionHash String?
+  receiptTransactionHash String?  @unique
   amount                 Float
   status                 String
   createdAt              DateTime @default(now())
