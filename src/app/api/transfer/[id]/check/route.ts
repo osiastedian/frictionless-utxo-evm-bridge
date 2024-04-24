@@ -7,8 +7,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { Transfer } from "@prisma/client";
 import { getAddress, getTx } from "@/utils/blockbook";
 
-const BLOCKBOOK_API_RULE = "https://blockbook.syscoin.org";
-
 const bitcoinToSatoshi = (amount: number) => amount * 100000000;
 
 export interface GetAddressResponse {
