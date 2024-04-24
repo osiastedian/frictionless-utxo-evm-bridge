@@ -1,6 +1,6 @@
 import { getDepositMultisigWallet } from "@/utils/utxo";
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Transfer } from "@prisma/client";
 
 export enum TransferStatus {
   Pending = "pending",
@@ -45,7 +45,11 @@ export const getTransfer = async (id: string) => {
   return transfer;
 };
 
-export const updateTransfer = async (id: string, status: TransferStatus) => {
+export const updateTransferToDeposited = async (
+  id: string,
+  status: TransferStatus,
+  transactionHash: string
+) => {
   const prisma = new PrismaClient();
 
   const transfer = await prisma.transfer.update({
@@ -54,8 +58,25 @@ export const updateTransfer = async (id: string, status: TransferStatus) => {
     },
     data: {
       status,
+      depositTransactionHash: transactionHash,
     },
   });
 
   return transfer;
+};
+
+export const getTransfers = async (
+  filters: Partial<Transfer> = {},
+  page = 1,
+  size = 10
+) => {
+  const prisma = new PrismaClient();
+
+  const transfers = await prisma.transfer.findMany({
+    where: filters,
+    skip: (page - 1) * size,
+    take: size,
+  });
+
+  return transfers;
 };

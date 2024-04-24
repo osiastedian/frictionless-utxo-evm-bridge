@@ -1,10 +1,10 @@
 import {
   TransferStatus,
   getTransfer,
-  updateTransfer,
+  updateTransferToDeposited,
 } from "@/service/transfer";
 import { NextRequest, NextResponse } from "next/server";
-
+import { Transfer } from "@prisma/client";
 import { getAddress, getTx } from "@/utils/blockbook";
 
 const BLOCKBOOK_API_RULE = "https://blockbook.syscoin.org";
@@ -57,6 +57,47 @@ export interface Vout {
   isAddress: boolean;
 }
 
+const checkPendingTransfer = async (transfer: Transfer) => {
+  const { id } = transfer;
+  const { txids } = await getAddress(transfer.depositAddress);
+
+  if (txids.length === 0) {
+    return NextResponse.json(
+      { message: "No transactions found" },
+      { status: 404 }
+    );
+  }
+
+  const txid = txids[txids.length - 1];
+
+  const { confirmations, vout } = await getTx(txid);
+
+  const isReceivingAddressCorrect = vout.some((out) =>
+    out.addresses.includes(transfer.depositAddress)
+  );
+
+  const isAmountCorrect = vout.some(
+    (out) => out.value === `${bitcoinToSatoshi(transfer.amount)}`
+  );
+
+  const isEnoughConfirmations = confirmations >= 6;
+
+  const isValidDeposit =
+    isReceivingAddressCorrect && isAmountCorrect && isEnoughConfirmations;
+
+  if (isValidDeposit) {
+    transfer = await updateTransferToDeposited(
+      id,
+      TransferStatus.Deposited,
+      txid
+    );
+  }
+
+  return NextResponse.json(transfer, {
+    status: 200,
+  });
+};
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -72,29 +113,12 @@ export async function GET(
     );
   }
 
-  const { txids } = await getAddress(transfer.depositAddress);
-  const txid = txids[txids.length - 1];
-
-  const { confirmations, vout } = await getTx(txid);
-
-  const isReceivingAddressCorrect = vout.some((out) =>
-    out.addresses.includes(transfer!.depositAddress)
-  );
-
-  const isAmountCorrect = vout.some(
-    (out) => out.value === `${bitcoinToSatoshi(transfer!.amount)}`
-  );
-
-  const isEnoughConfirmations = confirmations >= 6;
-
-  const isValidDeposit =
-    isReceivingAddressCorrect && isAmountCorrect && isEnoughConfirmations;
-
-  if (isValidDeposit) {
-    transfer = await updateTransfer(id, TransferStatus.Deposited);
+  if (transfer.status === TransferStatus.Pending) {
+    return checkPendingTransfer(transfer);
   }
 
-  return NextResponse.json(transfer, {
-    status: 200,
-  });
+  return NextResponse.json(
+    { message: "Invalid transfer status" },
+    { status: 400 }
+  );
 }
