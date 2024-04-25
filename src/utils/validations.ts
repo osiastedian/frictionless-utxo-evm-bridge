@@ -1,6 +1,6 @@
 import { networks } from "@/syscoin";
 import { address as bitcoinAddressLib } from "bitcoinjs-lib";
-import { isAddress as ethersIsAddress } from "ethers";
+import { isAddress as ethersIsAddress, ethers } from "ethers";
 
 export const isValidSyscoinAddress = (address: string) => {
   try {
@@ -20,4 +20,17 @@ export const isValidAmount = (amount: number) => {
 
 export const isValidEthAddress = (address: string) => {
   return ethersIsAddress(address);
+};
+
+export const verifySignedMessage = (
+  message: string,
+  address: string,
+  signedMessage: string
+): boolean => {
+  try {
+    const signer = ethers.verifyMessage(message, signedMessage);
+    return signer === address;
+  } catch (e) {
+    return false;
+  }
 };

@@ -1,5 +1,3 @@
-import { getDepositMultisigWallet } from "@/utils/utxo";
-
 import { PrismaClient, Transfer } from "@prisma/client";
 
 export enum TransferStatus {
@@ -10,21 +8,14 @@ export enum TransferStatus {
 }
 
 type CreateTransferParams = {
-  recipientAddress: string;
   amount: number;
-  refundAddress: string;
 };
 
 export const createTransfer = async (params: CreateTransferParams) => {
   const prisma = new PrismaClient();
-  const count = await prisma.transfer.count();
-  const utxoWallet = getDepositMultisigWallet(count);
 
   const transfer = await prisma.transfer.create({
     data: {
-      depositAddress: utxoWallet.address,
-      refundAddress: params.refundAddress,
-      recipientAddress: params.recipientAddress,
       amount: params.amount,
       status: TransferStatus.Pending,
     },

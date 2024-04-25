@@ -1,9 +1,5 @@
 import { createTransfer, getTransfers } from "@/service/transfer";
-import {
-  isValidAmount,
-  isValidEthAddress,
-  isValidSyscoinAddress,
-} from "@/utils/validations";
+import { isValidAmount, isValidEthAddress } from "@/utils/validations";
 import { Transfer } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -34,18 +30,11 @@ type RegisterTransferPayload = {
 export async function POST(request: NextRequest) {
   const data: RegisterTransferPayload = await request.json();
 
-  const { recipient, refund, amount } = data;
+  const { recipient, amount } = data;
 
-  if (!recipient || !refund || !amount) {
+  if (!recipient || !amount) {
     return NextResponse.json(
       { message: "Missing required fields" },
-      { status: 400 }
-    );
-  }
-
-  if (!isValidSyscoinAddress(refund)) {
-    return NextResponse.json(
-      { message: "Invalid refund address" },
       { status: 400 }
     );
   }
@@ -63,8 +52,6 @@ export async function POST(request: NextRequest) {
 
   const transfer = await createTransfer({
     amount,
-    recipientAddress: recipient,
-    refundAddress: refund,
   });
 
   return NextResponse.json(transfer);
