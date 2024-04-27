@@ -24,7 +24,11 @@ export const getAccountByRecipientAddress = async (address: string) => {
   return account;
 };
 
-export const addSignedMessage = async (id: string, signedMessage: string) => {
+export const addSignedMessage = async (
+  id: string,
+  signedMessage: string,
+  registrationHash: string
+) => {
   const prisma = new PrismaClient();
   const account = await prisma.account.update({
     where: {
@@ -32,6 +36,7 @@ export const addSignedMessage = async (id: string, signedMessage: string) => {
     },
     data: {
       signedMessage,
+      registrationHash,
       signedAt: new Date(),
     },
   });
