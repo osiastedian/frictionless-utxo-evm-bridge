@@ -23,13 +23,16 @@ export async function PUT(
   const data: PutBody = await request.json();
 
   if (!data.signedMessage) {
-    return { status: 400, body: { message: "Missing required fields" } };
+    return NextResponse.json(
+      { message: "Missing required fields" },
+      { status: 400 }
+    );
   }
 
   const account = await getAccountByRecipientAddress(signerAddress);
 
   if (!account) {
-    return { status: 404, body: { message: "Account not found" } };
+    return NextResponse.json({ message: "Account not found" }, { status: 404 });
   }
 
   const isValid = verifySignedMessage(
@@ -39,7 +42,10 @@ export async function PUT(
   );
 
   if (!isValid) {
-    return { status: 400, body: { message: "Invalid signed message" } };
+    return NextResponse.json(
+      { message: "Invalid signed message" },
+      { status: 400 }
+    );
   }
 
   const transactionReceipt = await registerAccount(

@@ -16,3 +16,55 @@ services:
     restart: always
     ports:
       - 8080:8080
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - 5672:5672
+      - 15672:15672
+
+  app:
+    build:
+      context: ./
+    command: npm run start
+    env_file:
+      - .env.local
+    ports:
+      - 3000:3000
+    depends_on:
+      - db
+      - rabbitmq
+    environment:
+      - BLOCKBOOK_API_URL=https://blockbook.syscoin.org
+      - DATABASE_URL=postgresql://admin:admin@db:5432/mydb?schema=public
+
+  transaction-monitor:
+    build:
+      context: ./oracles
+      dockerfile: Dockerfile
+    command: npm run start-transaction-monitor
+
+    volumes:
+      - ./oracles/transaction-monitor-oracle.ts:/app/transaction-monitor-oracle.ts
+    depends_on:
+      - rabbitmq
+      - app
+    environment:
+      - API_URL=http://app:3000/api
+      - AMQP_URL=amqp://guest:guest@rabbitmq:5672
+      - BLOCKBOOK_API_URL=https://blockbook.syscoin.org/api
+
+  transaction-registration:
+    build:
+      context: ./oracles
+      dockerfile: Dockerfile
+    command: npm run start-transaction-registration
+    volumes:
+      - ./oracles/transaction-registration.ts:/app/transaction-registration.ts
+    depends_on:
+      - rabbitmq
+      - app
+    environment:
+      - API_URL=http://app:3000/api
+      - AMQP_URL=amqp://guest:guest@rabbitmq:5672
+      - BLOCKBOOK_API_URL=https://blockbook.syscoin.org/api

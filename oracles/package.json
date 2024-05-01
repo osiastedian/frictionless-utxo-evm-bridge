@@ -1,0 +1,23 @@
+{
+  "name": "oracles",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start-transaction-monitor": "vite-node ./transaction-monitor-oracle.ts",
+    "start-transaction-registration": "vite-node ./transaction-registration.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@types/amqplib": "^0.10.5",
+    "amqplib": "^0.10.4",
+    "axios": "^1.6.8",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "vite-node": "^1.5.3"
+  }
+}

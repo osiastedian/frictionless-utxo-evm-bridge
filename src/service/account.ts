@@ -42,3 +42,13 @@ export const addSignedMessage = async (
   });
   return account;
 };
+
+export const getAccounts = async (page = 1, size = 100) => {
+  const prisma = new PrismaClient();
+  const account = await prisma.account.findMany({
+    skip: (page - 1) * size,
+    take: size,
+  });
+
+  return account;
+};
