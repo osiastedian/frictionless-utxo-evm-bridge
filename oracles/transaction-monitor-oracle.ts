@@ -76,6 +76,7 @@ const scanBlock = async (
               txId: tx.txid,
               deposit: address,
               recipient: registeredAccount,
+              value: out.value,
             });
           }
         });

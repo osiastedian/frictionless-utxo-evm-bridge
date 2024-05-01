@@ -1,8 +1,11 @@
 import dotenv from "dotenv";
 import amqplib from "amqplib";
 import { RegistrationTransaction } from "./types/registration";
+import { formatEther, formatUnits, parseEther, parseUnits } from "ethers";
 
 dotenv.config();
+
+const BITCOIN_IN_SATOSHI = 100_000_000;
 
 const AMQP_URL = process.env.AMQP_URL;
 const QUEUE_FOR_REGISTRATION = "for-registration-queue";
@@ -32,8 +35,11 @@ const run = async () => {
 
     const content = message.content.toString("utf-8");
     const parsedContent: RegistrationTransaction = JSON.parse(content);
+    const value = parseInt(parsedContent.value) / BITCOIN_IN_SATOSHI;
 
-    console.log("Received Content:", parsedContent);
+    const valueInWei = parseEther(`${value}`);
+
+    console.log("Received Content:", parsedContent, { value, valueInWei });
 
     console.groupEnd();
     channel.ack(message);
