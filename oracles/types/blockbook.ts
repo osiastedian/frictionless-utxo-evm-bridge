@@ -64,6 +64,7 @@ export interface Tx {
   value: string;
   valueIn: string;
   fees: string;
+  hex: string;
 }
 
 export interface Vin {

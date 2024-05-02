@@ -6,4 +6,6 @@ COPY ./ /app
 
 RUN npm ci
 
+RUN npx prisma generate
+
 CMD ["npm","run","start-transaction-monitor"]

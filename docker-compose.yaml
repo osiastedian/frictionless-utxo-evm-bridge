@@ -19,6 +19,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
+    restart: always
     ports:
       - 5672:5672
       - 15672:15672
@@ -64,7 +65,11 @@ services:
     depends_on:
       - rabbitmq
       - app
+    env_file:
+      - ./oracles/.env.docker.transaction-registration
     environment:
       - API_URL=http://app:3000/api
       - AMQP_URL=amqp://guest:guest@rabbitmq:5672
       - BLOCKBOOK_API_URL=https://blockbook.syscoin.org/api
+      - DATABASE_URL=postgresql://admin:admin@db:5432/transactions?schema=public
+      - RPC_URL=http://localhost:8545
