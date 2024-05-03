@@ -38,6 +38,7 @@ services:
     environment:
       - BLOCKBOOK_API_URL=https://blockbook.syscoin.org
       - DATABASE_URL=postgresql://admin:admin@db:5432/bridge?schema=public
+      - RPC_URL=http://rpc:8545
 
   transaction-monitor:
     build:

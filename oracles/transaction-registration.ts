@@ -66,6 +66,9 @@ if (!BRIDGE_API_URL) {
 const blockBookApi = new axios.Axios({
   baseURL: BLOCKBOOK_URL,
 });
+const bridgeApi = new axios.Axios({
+  baseURL: BRIDGE_API_URL,
+});
 const abi = [
   "function registerTransaction(bytes32 txid,bytes32 receiverId,uint amount)",
 ];
@@ -75,9 +78,6 @@ const provider = new ethers.JsonRpcProvider(RPC_URL, {
 });
 const wallet = new ethers.Wallet(TRANSACTION_REGISTRAR_PRIVATE_KEY, provider);
 const contract = new ethers.Contract(FUND_DISTRIBUTOR_ADDRESS, abi, wallet);
-const bridgeApi = new axios.Axios({
-  baseURL: DATABASE_URL,
-});
 
 const getTransaction = async (txHash: string): Promise<Tx> => {
   return blockBookApi
@@ -213,6 +213,17 @@ const run = async () => {
           confirmations: tx.confirmations,
         },
       });
+
+      const payload = {
+        txId: parsedContent.txId,
+        depositAddress: parsedContent.deposit,
+        amount: valueInWei,
+        confirmations: tx.confirmations,
+      };
+
+      const transfer = await bridgeApi.post("transfer", payload);
+
+      console.log("Bridge Transfer:", transfer.data);
 
       console.groupEnd();
     },
