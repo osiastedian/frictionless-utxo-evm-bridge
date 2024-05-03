@@ -91,7 +91,7 @@ const runRegistration = async (
   lastBlock = -1
 ) => {
   console.group("\n======= NEW RUN =======");
-  const latestBlock = await getLatestBlock(); // Test block: 1808858
+  const latestBlock = 1808858; // await getLatestBlock(); // Test block: 1808858
   console.log("Latest Block:", latestBlock);
   if (latestBlock === lastBlock) {
     console.groupEnd();

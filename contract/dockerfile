@@ -1,0 +1,21 @@
+FROM node:20
+
+WORKDIR /app
+
+COPY ./package.json ./package.json
+
+COPY ./package-lock.json ./package-lock.json
+
+RUN npm ci
+
+COPY ./contracts ./contracts
+
+COPY ./ignition ./ignition
+
+COPY ./hardhat.config.ts ./hardhat.config.ts
+
+COPY ./tsconfig.json ./tsconfig.json
+
+COPY ./docker/entrypoint.sh /usr/local/bin
+
+ENTRYPOINT ["/bin/sh", "/usr/local/bin/entrypoint.sh"]

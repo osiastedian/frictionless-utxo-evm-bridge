@@ -37,7 +37,7 @@ services:
       - rabbitmq
     environment:
       - BLOCKBOOK_API_URL=https://blockbook.syscoin.org
-      - DATABASE_URL=postgresql://admin:admin@db:5432/mydb?schema=public
+      - DATABASE_URL=postgresql://admin:admin@db:5432/bridge?schema=public
 
   transaction-monitor:
     build:
@@ -55,6 +55,13 @@ services:
       - AMQP_URL=amqp://guest:guest@rabbitmq:5672
       - BLOCKBOOK_API_URL=https://blockbook.syscoin.org/api
 
+  rpc:
+    build:
+      context: ./contract
+      dockerfile: Dockerfile
+    ports:
+      - 8545:8545
+
   transaction-registration:
     build:
       context: ./oracles
@@ -64,12 +71,12 @@ services:
       - ./oracles/transaction-registration.ts:/app/transaction-registration.ts
     depends_on:
       - rabbitmq
-      - app
+      - rpc
     env_file:
       - ./oracles/.env.docker.transaction-registration
     environment:
-      - API_URL=http://app:3000/api
+      - BRIDGE_API_URL=http://app:3000/api
       - AMQP_URL=amqp://guest:guest@rabbitmq:5672
       - BLOCKBOOK_API_URL=https://blockbook.syscoin.org/api
       - DATABASE_URL=postgresql://admin:admin@db:5432/transactions?schema=public
-      - RPC_URL=http://localhost:8545
+      - RPC_URL=http://rpc:8545

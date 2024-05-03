@@ -2,7 +2,12 @@ import dotenv from "dotenv";
 import amqplib from "amqplib";
 import axios from "axios";
 import { RegistrationTransaction } from "./types/registration";
-import { ethers, formatUnits, parseEther } from "ethers";
+import {
+  ContractTransactionResponse,
+  ethers,
+  formatUnits,
+  parseEther,
+} from "ethers";
 import { PrismaClient, Transaction } from "@prisma/client";
 import { Tx } from "./types/blockbook";
 
@@ -21,6 +26,7 @@ const TRANSACTION_REGISTRAR_PRIVATE_KEY =
 const FUND_DISTRIBUTOR_ADDRESS = process.env.FUND_DISTRIBUTOR_ADDRESS;
 
 const BLOCKBOOK_URL = process.env.BLOCKBOOK_API_URL;
+const BRIDGE_API_URL = process.env.BRIDGE_API_URL;
 
 if (!BLOCKBOOK_URL) {
   console.error("BLOCKBOOK_URL is not set");
@@ -52,6 +58,11 @@ if (!FUND_DISTRIBUTOR_ADDRESS) {
   process.exit(1);
 }
 
+if (!BRIDGE_API_URL) {
+  console.error("BRIDGE_API_URL is not set");
+  process.exit(1);
+}
+
 const blockBookApi = new axios.Axios({
   baseURL: BLOCKBOOK_URL,
 });
@@ -64,6 +75,9 @@ const provider = new ethers.JsonRpcProvider(RPC_URL, {
 });
 const wallet = new ethers.Wallet(TRANSACTION_REGISTRAR_PRIVATE_KEY, provider);
 const contract = new ethers.Contract(FUND_DISTRIBUTOR_ADDRESS, abi, wallet);
+const bridgeApi = new axios.Axios({
+  baseURL: DATABASE_URL,
+});
 
 const getTransaction = async (txHash: string): Promise<Tx> => {
   return blockBookApi
@@ -116,13 +130,17 @@ const runTransactionVerifications = async (page = 0, size = 10) => {
     const hashedTxId = ethers.hashMessage(transaction.txId);
     const hashedReceiverId = ethers.hashMessage(transaction.depositAddress);
     const amountInWei = transaction.amount;
-    const call = await contract.getFunction("registerTransaction")(
-      hashedTxId,
-      hashedReceiverId,
-      amountInWei
-    );
+    const call: ContractTransactionResponse = await contract.getFunction(
+      "registerTransaction"
+    )(hashedTxId, hashedReceiverId, amountInWei);
 
-    console.log({ call });
+    const receipt = await call.wait(1);
+
+    if (!receipt || receipt.status === 0) {
+      console.error("Transaction failed", { transaction });
+    }
+
+    console.log("Transaction registered", { receipt });
   }
 
   if (transactions.length === size) {
