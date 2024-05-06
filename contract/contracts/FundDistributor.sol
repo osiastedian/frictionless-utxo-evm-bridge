@@ -2,41 +2,46 @@
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import "hardhat/console.sol";
 
 contract FundDistributor {
-    uint8 public constant ACCOUNT_REGISTRAR = 1;
-    uint8 public constant PAYOUT_REGISTRAR = 2;
-    uint8 public constant TRANSACTION_REGISTRAR = 3;
+    uint public constant ACCOUNT_REGISTRAR = 1;
+    uint public constant PAYOUT_REGISTRAR = 2;
+    uint public constant TRANSACTION_REGISTRAR = 3;
 
-    uint8 public constant TX_STATUS_PENDING = 1;
-    uint8 public constant TX_STATUS_COMPLETED = 2;
+    uint public constant TX_STATUS_PENDING = 1;
+    uint public constant TX_STATUS_COMPLETED = 2;
 
     address payable public admin;
     uint public totalLimit;
     mapping(address => uint) public limits;
     mapping(address => uint8) public roles;
 
-    mapping(bytes32 => address) public receiverAddress;
+    mapping(string => address) public receiverAddress;
 
-    mapping(bytes32 => bytes32) public txRegistration;
-    mapping(bytes32 => uint) public txAmount;
-    mapping(bytes32 => uint8) public txStatus;
+    mapping(string => string) public txRegistration;
+    mapping(string => uint) public txAmount;
+    mapping(string => uint) public txStatus;
 
     bool public isActive = true;
 
     event TransactionComplete(
         address indexed registrar,
-        bytes32 indexed txId,
+        string indexed txId,
         address indexed to,
         uint amount
     );
     event TransactionPending(
         address indexed registrar,
-        bytes32 indexed txId,
-        bytes32 indexed depositor,
+        string indexed txId,
+        string indexed depositor,
         uint amount
     );
-    event RegisterReceiver(address indexed receiver, address indexed signer);
+    event RegisterReceiver(
+        address indexed receiver,
+        string indexed depositAddress
+    );
     event Withdraw(address indexed admin, uint amount);
 
     constructor() {
@@ -77,6 +82,10 @@ contract FundDistributor {
         _;
     }
 
+    function changeOwnership(address payable newAdmin) public onlyAdmin {
+        admin = newAdmin;
+    }
+
     function addRegistrar(
         address registrar,
         uint8 role
@@ -93,50 +102,54 @@ contract FundDistributor {
 
     function registerAccount(
         address receiver,
-        bytes32 message,
-        bytes memory signedMessage
+        string calldata depositAddress,
+        bytes calldata signedMessage
     ) public onlyAccountRegistrar contractActive {
+        bytes32 hashedMessage = MessageHashUtils.toEthSignedMessageHash(
+            bytes(depositAddress)
+        );
         require(receiver != address(0), "Can't register zero address");
         require(
-            receiverAddress[message] == address(0),
+            receiverAddress[depositAddress] == address(0),
             "Receiver address is already registered"
         );
 
-        address signer = ECDSA.recover(message, signedMessage);
+        address signer = ECDSA.recover(hashedMessage, signedMessage);
+        console.log("Signer: %s, receiver: %s", signer, receiver);
 
         require(
             signer == receiver,
             "Signer address is not the same as the receiver address"
         );
 
-        receiverAddress[message] = receiver;
+        receiverAddress[depositAddress] = receiver;
 
-        emit RegisterReceiver(receiver, signer);
+        emit RegisterReceiver(receiver, depositAddress);
     }
 
     function registerTransaction(
-        bytes32 txid,
-        bytes32 receiverId,
+        string calldata txid,
+        string calldata depositorAddress,
         uint amount
     ) public onlyTransactionRegistrar contractActive {
         require(
-            receiverAddress[receiverId] != address(0),
+            receiverAddress[depositorAddress] != address(0),
             "Account not registered"
         );
         require(
-            txRegistration[txid] == bytes32(0),
+            bytes(txRegistration[txid]).length == 0,
             "Transaction is already registered"
         );
 
-        txRegistration[txid] = receiverId;
+        txRegistration[txid] = depositorAddress;
         txAmount[txid] = amount;
         txStatus[txid] = TX_STATUS_PENDING;
 
-        emit TransactionPending(msg.sender, txid, receiverId, amount);
+        emit TransactionPending(msg.sender, txid, depositorAddress, amount);
     }
 
     function payout(
-        bytes32 txId
+        string calldata txId
     ) public payable onlyPayoutRegistrar contractActive {
         require(txStatus[txId] != 0, "Transaction is not registered");
         require(

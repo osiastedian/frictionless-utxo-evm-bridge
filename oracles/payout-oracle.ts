@@ -1,22 +1,41 @@
-import { ethers, TransactionResponse } from "ethers";
+import dotenv from "dotenv";
+import { Interface, ethers } from "ethers";
+import { getTransaction } from "./blockbook-utils";
 
-export const RPC_URL = process.env.RPC_URL || "http://localhost:8545";
-export const CHAIN_ID = process.env.CHAIN_ID || "31337";
-export const provider = new ethers.JsonRpcProvider(RPC_URL, {
-  chainId: parseInt(CHAIN_ID),
-  name: "hard-hat",
+dotenv.config();
+
+const RPC_URL = process.env.RPC_URL;
+const PAYOUT_REGISTRAR_PRIVATE_KEY = process.env.PAYOUT_REGISTRAR_PRIVATE_KEY;
+const FUND_DISTRIBUTOR_ADDRESS = process.env.FUND_DISTRIBUTOR_ADDRESS;
+
+console.log("Payout Constants", {
+  RPC_URL,
+  PAYOUT_REGISTRAR_PRIVATE_KEY,
+  FUND_DISTRIBUTOR_ADDRESS,
 });
-export const signerPrivateKey = process.env.PRIVATE_KEY!;
-export const FUND_DISTRIBUTOR_ADDRESS = process.env.FUND_DISTRIBUTOR_ADDRESS!;
-export const FUND_DISTRIBUTOR_ABI_FILE = process.env.FUND_DISTRIBUTOR_ABI_FILE!;
 
-const signer = new ethers.Wallet(signerPrivateKey, provider);
+if (RPC_URL === undefined) {
+  console.error("RPC_URL is not set");
+  process.exit(1);
+}
+
+if (!PAYOUT_REGISTRAR_PRIVATE_KEY) {
+  console.error("PAYOUT_REGISTRAR_PRIVATE_KEY is not set");
+  process.exit(1);
+}
+
+if (!FUND_DISTRIBUTOR_ADDRESS) {
+  console.error("FUND_DISTRIBUTOR_ADDRESS is not set");
+  process.exit(1);
+}
 
 // const abi = [
-//   "function registerAccount(address receiver, bytes32 message, bytes signedMessage)",
+//   "function PAYOUT_REGISTRAR() public view returns (uint)",
+//   "function roles(address) public view returns (uint)",
+//   "event TransactionPending(address,bytes32,bytes32,uint)",
 // ];
 
-const abi = [
+const abi = new Interface([
   {
     inputs: [],
     stateMutability: "nonpayable",
@@ -154,9 +173,9 @@ const abi = [
     name: "ACCOUNT_REGISTRAR",
     outputs: [
       {
-        internalType: "uint8",
+        internalType: "uint256",
         name: "",
-        type: "uint8",
+        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -167,9 +186,9 @@ const abi = [
     name: "PAYOUT_REGISTRAR",
     outputs: [
       {
-        internalType: "uint8",
+        internalType: "uint256",
         name: "",
-        type: "uint8",
+        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -180,9 +199,9 @@ const abi = [
     name: "TRANSACTION_REGISTRAR",
     outputs: [
       {
-        internalType: "uint8",
+        internalType: "uint256",
         name: "",
-        type: "uint8",
+        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -193,9 +212,9 @@ const abi = [
     name: "TX_STATUS_COMPLETED",
     outputs: [
       {
-        internalType: "uint8",
+        internalType: "uint256",
         name: "",
-        type: "uint8",
+        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -206,9 +225,9 @@ const abi = [
     name: "TX_STATUS_PENDING",
     outputs: [
       {
-        internalType: "uint8",
+        internalType: "uint256",
         name: "",
-        type: "uint8",
+        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -243,6 +262,19 @@ const abi = [
       },
     ],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address payable",
+        name: "newAdmin",
+        type: "address",
+      },
+    ],
+    name: "changeOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -480,9 +512,9 @@ const abi = [
     name: "txStatus",
     outputs: [
       {
-        internalType: "uint8",
+        internalType: "uint256",
         name: "",
-        type: "uint8",
+        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -499,29 +531,35 @@ const abi = [
     stateMutability: "payable",
     type: "receive",
   },
-];
+]);
 
-const fundDistributorContract = new ethers.Contract(
-  FUND_DISTRIBUTOR_ADDRESS,
-  abi,
-  signer
-);
+const provider = new ethers.JsonRpcProvider(RPC_URL, {
+  chainId: 31337,
+  name: "hard-hat",
+});
+const wallet = new ethers.Wallet(PAYOUT_REGISTRAR_PRIVATE_KEY, provider);
+const contract = new ethers.Contract(FUND_DISTRIBUTOR_ADDRESS, abi, wallet);
 
-export const registerAccount = async (
-  depositAddress: string,
-  recipientAddress: string,
-  signedMessage: string
-): Promise<string | null> => {
-  console.log("params", depositAddress, recipientAddress, signedMessage);
-  const call: TransactionResponse =
-    await fundDistributorContract.registerAccount(
-      recipientAddress,
-      depositAddress,
-      signedMessage
-    );
-  const transactionReceipt = await call.wait(1);
-  if (!transactionReceipt) {
-    return null;
+console.log("Payout Oracle is running");
+
+const run = async () => {
+  const PAYOUT_REGISTRAR = await contract.PAYOUT_REGISTRAR();
+  const registrarRole = await contract.roles(wallet.address);
+  if (registrarRole !== PAYOUT_REGISTRAR) {
+    console.error("Payout registrar is not authorized to register payouts");
+    process.exit(1);
   }
-  return transactionReceipt.hash;
+
+  return new Promise((resolve) => {
+    contract.on(
+      "TransactionPending",
+      async (registrar, txId, depositor, amount) => {
+        console.log("Event received", [registrar, txId, depositor, amount]);
+
+        const tx = await getTransaction(txId);
+        console.log("Payout transaction pending", tx);
+      }
+    );
+  });
 };
+run();

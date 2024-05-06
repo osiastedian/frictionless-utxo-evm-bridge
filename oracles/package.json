@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start-transaction-monitor": "vite-node ./transaction-monitor-oracle.ts",
-    "start-transaction-registration": "vite-node ./transaction-registration.ts"
+    "start-transaction-registration": "vite-node ./transaction-registration.ts",
+    "start-transaction-payout": "vite-node ./payout-oracle.ts"
   },
   "author": "",
   "license": "ISC",

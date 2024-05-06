@@ -2,7 +2,7 @@ import { expect } from "chai";
 import hre from "hardhat";
 import { ethers } from "ethers";
 
-describe("FundDistributor", () => {
+describe.only("FundDistributor", () => {
   async function deploy() {
     const [owner, alice, bob, charlie, dolly] = await hre.ethers.getSigners();
 
@@ -75,12 +75,11 @@ describe("FundDistributor", () => {
     it("should allow registrar to register an account", async () => {
       const { fundDistributor, alice, bob } = await setup();
       const rawMessage = "sys1qa2esanq7szrpckvlcnu6gwksc4p5xd4efjn408";
-      const hashedMessage = ethers.hashMessage(rawMessage);
       const signature = await bob.signMessage(rawMessage);
       await fundDistributor
         .connect(alice)
-        .registerAccount(bob.address, hashedMessage, signature);
-      expect(await fundDistributor.receiverAddress(hashedMessage)).to.equal(
+        .registerAccount(bob.address, rawMessage, signature);
+      expect(await fundDistributor.receiverAddress(rawMessage)).to.equal(
         bob.address
       );
     });
@@ -116,46 +115,34 @@ describe("FundDistributor", () => {
       await expect(
         fundDistributor
           .connect(bob)
-          .registerTransaction(
-            ethers.hashMessage(txId),
-            ethers.hashMessage(depositAccount),
-            amount
-          )
+          .registerTransaction(txId, depositAccount, amount)
       ).to.be.revertedWith("Account not registered");
     });
 
     it("should not allow double registration of tx", async () => {
       const { fundDistributor, alice, bob, charlie } = await setup();
-      const rawMessage = "sys1qa2esanq7szrpckvlcnu6gwksc4p5xd4efjn408";
-      const hashedMessage = ethers.hashMessage(rawMessage);
-      const signature = await charlie.signMessage(rawMessage);
+      const depositorAddress = "sys1qa2esanq7szrpckvlcnu6gwksc4p5xd4efjn408";
+      const signature = await charlie.signMessage(depositorAddress);
       await fundDistributor
         .connect(alice)
-        .registerAccount(charlie.address, hashedMessage, signature);
+        .registerAccount(charlie.address, depositorAddress, signature);
       const txId =
         "e573e0cb1582867789d12cbaef4c2230b4289669e5955a46cf4471b2b7c6c38a";
       const depositAccount = "sys1qa2esanq7szrpckvlcnu6gwksc4p5xd4efjn408";
       const amount = ethers.parseEther("1");
 
-      const hashedTxId = ethers.hashMessage(txId);
-      const hashedDepositAccount = ethers.hashMessage(depositAccount);
-
       await expect(
         fundDistributor
           .connect(bob)
-          .registerTransaction(hashedTxId, hashedDepositAccount, amount)
+          .registerTransaction(txId, depositAccount, amount)
       )
         .to.emit(fundDistributor, "TransactionPending")
-        .withArgs(bob.address, hashedTxId, hashedDepositAccount, amount);
+        .withArgs(bob.address, txId, depositorAddress, amount);
 
       await expect(
         fundDistributor
           .connect(bob)
-          .registerTransaction(
-            ethers.hashMessage(txId),
-            ethers.hashMessage(depositAccount),
-            amount
-          )
+          .registerTransaction(txId, depositAccount, amount)
       ).to.be.revertedWith("Transaction is already registered");
     });
   });
@@ -194,20 +181,12 @@ describe("FundDistributor", () => {
       const signedMessage = await dolly.signMessage(depositAccount);
       await fundDistributor
         .connect(alice)
-        .registerAccount(
-          dolly.address,
-          ethers.hashMessage(depositAccount),
-          signedMessage
-        );
+        .registerAccount(dolly.address, depositAccount, signedMessage);
 
       // Register Dolly's deposit transaction id by TRANSACTION_REGISTRAR
       await fundDistributor
         .connect(bob)
-        .registerTransaction(
-          ethers.hashMessage(txId),
-          ethers.hashMessage(depositAccount),
-          amountInEther
-        );
+        .registerTransaction(txId, depositAccount, amountInEther);
 
       return params;
     };
@@ -218,7 +197,7 @@ describe("FundDistributor", () => {
 
       // Payout Registrar verifies the transaction and pays out
       await expect(() =>
-        fundDistributor.connect(charlie).payout(ethers.hashMessage(txId))
+        fundDistributor.connect(charlie).payout(txId)
       ).to.changeEtherBalances(
         [contractAddress, dolly.address],
         [`-${amountInEther}`, amountInEther]
@@ -231,7 +210,7 @@ describe("FundDistributor", () => {
         "e573e0cb1582867789d12cbaef4c2230b4289669e5955a46cf4471b2b7c6c38b";
 
       await expect(
-        fundDistributor.connect(charlie).payout(ethers.hashMessage(txId2))
+        fundDistributor.connect(charlie).payout(txId2)
       ).to.be.revertedWith("Transaction is not registered");
     });
   });

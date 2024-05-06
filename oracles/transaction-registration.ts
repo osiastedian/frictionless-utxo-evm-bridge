@@ -127,12 +127,10 @@ const runTransactionVerifications = async (page = 0, size = 10) => {
   }
 
   for (let transaction of forRegistration) {
-    const hashedTxId = ethers.hashMessage(transaction.txId);
-    const hashedReceiverId = ethers.hashMessage(transaction.depositAddress);
     const amountInWei = transaction.amount;
     const call: ContractTransactionResponse = await contract.getFunction(
       "registerTransaction"
-    )(hashedTxId, hashedReceiverId, amountInWei);
+    )(transaction.txId, transaction.depositAddress, amountInWei);
 
     const receipt = await call.wait(1);
 
@@ -221,9 +219,9 @@ const run = async () => {
         confirmations: tx.confirmations,
       };
 
-      const transfer = await bridgeApi.post("transfer", payload);
+      // const transfer = await bridgeApi.post("transfer", payload);
 
-      console.log("Bridge Transfer:", transfer.data);
+      // console.log("Bridge Transfer:", transfer.data);
 
       console.groupEnd();
     },

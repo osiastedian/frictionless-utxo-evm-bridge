@@ -2,7 +2,7 @@
   "name": "hardhat-project",
   "scripts": {
     "start-local": "./node_modules/.bin/hardhat node",
-    "deploy-local-fund-distributor": "./node_modules/.bin/hardhat ignition deploy ignition/modules/FundDistributor.ts --network hardhat"
+    "deploy-local-fund-distributor": "./node_modules/.bin/hardhat ignition deploy ignition/modules/FundDistributor.ts --network localhost"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",

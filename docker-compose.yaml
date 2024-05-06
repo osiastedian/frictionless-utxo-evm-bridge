@@ -24,6 +24,13 @@ services:
       - 5672:5672
       - 15672:15672
 
+  rpc:
+    build:
+      context: ./contract
+      dockerfile: Dockerfile
+    ports:
+      - 8545:8545
+
   app:
     build:
       context: ./
@@ -56,13 +63,6 @@ services:
       - AMQP_URL=amqp://guest:guest@rabbitmq:5672
       - BLOCKBOOK_API_URL=https://blockbook.syscoin.org/api
 
-  rpc:
-    build:
-      context: ./contract
-      dockerfile: Dockerfile
-    ports:
-      - 8545:8545
-
   transaction-registration:
     build:
       context: ./oracles
@@ -75,6 +75,25 @@ services:
       - rpc
     env_file:
       - ./oracles/.env.docker.transaction-registration
+    environment:
+      - BRIDGE_API_URL=http://app:3000/api
+      - AMQP_URL=amqp://guest:guest@rabbitmq:5672
+      - BLOCKBOOK_API_URL=https://blockbook.syscoin.org/api
+      - DATABASE_URL=postgresql://admin:admin@db:5432/transactions?schema=public
+      - RPC_URL=http://rpc:8545
+
+  transaction-payout:
+    build:
+      context: ./oracles
+      dockerfile: Dockerfile
+    command: npm run start-transaction-payout
+    volumes:
+      - ./oracles/payout-oracle.ts:/app/payout-oracle.ts
+    depends_on:
+      - rabbitmq
+      - rpc
+    env_file:
+      - ./oracles/.env.docker.payout
     environment:
       - BRIDGE_API_URL=http://app:3000/api
       - AMQP_URL=amqp://guest:guest@rabbitmq:5672
