@@ -35,17 +35,21 @@ services:
     build:
       context: ./
     command: npm run start
+    volumes:
+      - ./contract/artifacts/contracts/FundDistributor.sol/FundDistributor.json:/app/abi.json
     env_file:
-      - .env.local
+      - .env.docker
     ports:
       - 3000:3000
     depends_on:
       - db
       - rabbitmq
+      - rpc
     environment:
       - BLOCKBOOK_API_URL=https://blockbook.syscoin.org
       - DATABASE_URL=postgresql://admin:admin@db:5432/bridge?schema=public
       - RPC_URL=http://rpc:8545
+      - FUND_DISTRIBUTOR_ABI_FILE_PATH=/app/abi.json
 
   transaction-monitor:
     build:
@@ -89,6 +93,7 @@ services:
     command: npm run start-transaction-payout
     volumes:
       - ./oracles/payout-oracle.ts:/app/payout-oracle.ts
+      - ./contract/artifacts/contracts/FundDistributor.sol/FundDistributor.json:/app/abi.json
     depends_on:
       - rabbitmq
       - rpc
@@ -100,3 +105,5 @@ services:
       - BLOCKBOOK_API_URL=https://blockbook.syscoin.org/api
       - DATABASE_URL=postgresql://admin:admin@db:5432/transactions?schema=public
       - RPC_URL=http://rpc:8545
+      - FUND_DISTRIBUTOR_ABI_FILE_PATH=/app/abi.json
+
