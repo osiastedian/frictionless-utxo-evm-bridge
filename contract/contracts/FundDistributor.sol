@@ -27,21 +27,17 @@ contract FundDistributor {
     bool public isActive = true;
 
     event TransactionComplete(
-        address indexed registrar,
-        string indexed txId,
-        address indexed to,
+        address indexed receiver,
+        string txId,
         uint amount
     );
     event TransactionPending(
-        address indexed registrar,
-        string indexed txId,
-        string indexed depositor,
+        address indexed receiver,
+        string depositorRawAddress,
+        string txId,
         uint amount
     );
-    event RegisterReceiver(
-        address indexed receiver,
-        string indexed depositAddress
-    );
+    event RegisterAccount(address indexed receiver, string depositAddress);
     event Withdraw(address indexed admin, uint amount);
 
     constructor() {
@@ -115,7 +111,6 @@ contract FundDistributor {
         );
 
         address signer = ECDSA.recover(hashedMessage, signedMessage);
-        console.log("Signer: %s, receiver: %s", signer, receiver);
 
         require(
             signer == receiver,
@@ -124,7 +119,7 @@ contract FundDistributor {
 
         receiverAddress[depositAddress] = receiver;
 
-        emit RegisterReceiver(receiver, depositAddress);
+        emit RegisterAccount(receiver, depositAddress);
     }
 
     function registerTransaction(
@@ -145,7 +140,12 @@ contract FundDistributor {
         txAmount[txid] = amount;
         txStatus[txid] = TX_STATUS_PENDING;
 
-        emit TransactionPending(msg.sender, txid, depositorAddress, amount);
+        emit TransactionPending(
+            receiverAddress[depositorAddress],
+            depositorAddress,
+            txid,
+            amount
+        );
     }
 
     function payout(
@@ -161,7 +161,7 @@ contract FundDistributor {
         uint amount = txAmount[txId];
         txStatus[txId] = TX_STATUS_COMPLETED;
         distribute(to, amount);
-        emit TransactionComplete(msg.sender, txId, to, amount);
+        emit TransactionComplete(to, txId, amount);
     }
 
     function increaseLimit(

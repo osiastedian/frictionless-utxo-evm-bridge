@@ -1,5 +1,10 @@
 import dotenv from "dotenv";
-import { Interface, ethers } from "ethers";
+import {
+  ContractTransactionResponse,
+  Interface,
+  ethers,
+  parseUnits,
+} from "ethers";
 import { getTransaction } from "./blockbook-utils";
 import fs from "fs";
 
@@ -8,7 +13,8 @@ dotenv.config();
 const RPC_URL = process.env.RPC_URL;
 const PAYOUT_REGISTRAR_PRIVATE_KEY = process.env.PAYOUT_REGISTRAR_PRIVATE_KEY;
 const FUND_DISTRIBUTOR_ADDRESS = process.env.FUND_DISTRIBUTOR_ADDRESS;
-const FUND_DISTRIBUTOR_ABI_FILE_PATH = process.env.FUND_DISTRIBUTOR_ABI_FILE_PATH ?? "./abi.json";
+const FUND_DISTRIBUTOR_ABI_FILE_PATH =
+  process.env.FUND_DISTRIBUTOR_ABI_FILE_PATH ?? "./abi.json";
 
 console.log("Payout Constants", {
   RPC_URL,
@@ -35,6 +41,9 @@ if (fs.existsSync(FUND_DISTRIBUTOR_ABI_FILE_PATH) === false) {
   console.error("FUND_DISTRIBUTOR_ABI_FILE_PATH is not set");
   process.exit(1);
 }
+const BITCOIN_IN_SATOSHI = 100_000_000;
+
+console.log("Expected: 1000000");
 
 const abiRaw = fs.readFileSync(FUND_DISTRIBUTOR_ABI_FILE_PATH).toString();
 const { abi: abiJson } = JSON.parse(abiRaw);
@@ -61,11 +70,31 @@ const run = async () => {
   return new Promise((resolve) => {
     contract.on(
       "TransactionPending",
-      async (registrar, txId, depositor, amount) => {
-        console.log("Event received", [registrar, txId, depositor, amount]);
+      async (receiver, depositor, txId, amount: bigint) => {
+        console.log("Event received", [receiver, depositor, txId, amount]);
+
+        const amountInSats = ethers.formatUnits(amount, "wei");
 
         const tx = await getTransaction(txId);
-        console.log("Payout transaction pending", tx);
+        const fromSats = (val: string) => parseInt(val) / BITCOIN_IN_SATOSHI;
+        const isValid = tx.vout.some(
+          (vout) =>
+            vout.isAddress &&
+            vout.addresses &&
+            vout.addresses.includes(depositor) &&
+            ethers.parseEther(`${fromSats(vout.value)}`).toString() ===
+              amountInSats.toString()
+        );
+
+        if (!isValid) {
+          console.error("Invalid transaction from", [txId, amountInSats]);
+          return;
+        }
+
+        const call: ContractTransactionResponse = await contract.payout(txId);
+        call.wait(1).then(() => {
+          console.log("Payout completed", [txId, amountInSats]);
+        });
       }
     );
   });

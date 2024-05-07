@@ -1,9 +1,11 @@
+import fs from "fs";
 import dotenv from "dotenv";
 import amqplib from "amqplib";
 import axios from "axios";
 import { RegistrationTransaction } from "./types/registration";
 import {
   ContractTransactionResponse,
+  Interface,
   ethers,
   formatUnits,
   parseEther,
@@ -20,13 +22,14 @@ const QUEUE_FOR_REGISTRATION = "for-registration-queue";
 const DATABASE_URL = process.env.DATABASE_URL;
 
 const RPC_URL = process.env.RPC_URL;
-const TRANSACTION_REGISTRAR_PRIVATE_KEY =
-  process.env.TRANSACTION_REGISTRAR_PRIVATE_KEY;
+const TRANSACTION_REGISTRAR_PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 const FUND_DISTRIBUTOR_ADDRESS = process.env.FUND_DISTRIBUTOR_ADDRESS;
 
 const BLOCKBOOK_URL = process.env.BLOCKBOOK_API_URL;
-const BRIDGE_API_URL = process.env.BRIDGE_API_URL;
+const FUND_DISTRIBUTOR_ABI_FILE_PATH =
+  process.env.FUND_DISTRIBUTOR_ABI_FILE_PATH ?? "./abi.json";
+const CHAIN_ID = process.env.CHAIN_ID;
 
 if (!BLOCKBOOK_URL) {
   console.error("BLOCKBOOK_URL is not set");
@@ -58,22 +61,26 @@ if (!FUND_DISTRIBUTOR_ADDRESS) {
   process.exit(1);
 }
 
-if (!BRIDGE_API_URL) {
-  console.error("BRIDGE_API_URL is not set");
+if (fs.existsSync(FUND_DISTRIBUTOR_ABI_FILE_PATH) === false) {
+  console.error("FUND_DISTRIBUTOR_ABI_FILE_PATH is not set");
+  process.exit(1);
+}
+
+if (!CHAIN_ID) {
+  console.error("CHAIN_ID is not set");
   process.exit(1);
 }
 
 const blockBookApi = new axios.Axios({
   baseURL: BLOCKBOOK_URL,
 });
-const bridgeApi = new axios.Axios({
-  baseURL: BRIDGE_API_URL,
-});
-const abi = [
-  "function registerTransaction(bytes32 txid,bytes32 receiverId,uint amount)",
-];
+
+const abiRaw = fs.readFileSync(FUND_DISTRIBUTOR_ABI_FILE_PATH).toString();
+const { abi: abiJson } = JSON.parse(abiRaw);
+
+const abi = new Interface(abiJson);
 const provider = new ethers.JsonRpcProvider(RPC_URL, {
-  chainId: 31337,
+  chainId: parseInt(CHAIN_ID),
   name: "hard-hat",
 });
 const wallet = new ethers.Wallet(TRANSACTION_REGISTRAR_PRIVATE_KEY, provider);
@@ -211,17 +218,6 @@ const run = async () => {
           confirmations: tx.confirmations,
         },
       });
-
-      const payload = {
-        txId: parsedContent.txId,
-        depositAddress: parsedContent.deposit,
-        amount: valueInWei,
-        confirmations: tx.confirmations,
-      };
-
-      // const transfer = await bridgeApi.post("transfer", payload);
-
-      // console.log("Bridge Transfer:", transfer.data);
 
       console.groupEnd();
     },

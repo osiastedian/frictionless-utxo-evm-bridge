@@ -56,16 +56,19 @@ services:
       context: ./oracles
       dockerfile: Dockerfile
     command: npm run start-transaction-monitor
-
+    env_file:
+      - ./oracles/.env.docker.transaction-registration
     volumes:
       - ./oracles/transaction-monitor-oracle.ts:/app/transaction-monitor-oracle.ts
+      - ./contract/artifacts/contracts/FundDistributor.sol/FundDistributor.json:/app/abi.json
     depends_on:
       - rabbitmq
-      - app
+      - rpc
     environment:
-      - API_URL=http://app:3000/api
       - AMQP_URL=amqp://guest:guest@rabbitmq:5672
       - BLOCKBOOK_API_URL=https://blockbook.syscoin.org/api
+      - RPC_URL=http://rpc:8545
+      - FUND_DISTRIBUTOR_ABI_FILE_PATH=/app/abi.json
 
   transaction-registration:
     build:
@@ -74,6 +77,7 @@ services:
     command: npm run start-transaction-registration
     volumes:
       - ./oracles/transaction-registration.ts:/app/transaction-registration.ts
+      - ./contract/artifacts/contracts/FundDistributor.sol/FundDistributor.json:/app/abi.json
     depends_on:
       - rabbitmq
       - rpc
@@ -85,6 +89,7 @@ services:
       - BLOCKBOOK_API_URL=https://blockbook.syscoin.org/api
       - DATABASE_URL=postgresql://admin:admin@db:5432/transactions?schema=public
       - RPC_URL=http://rpc:8545
+      - FUND_DISTRIBUTOR_ABI_FILE_PATH=/app/abi.json
 
   transaction-payout:
     build:
@@ -106,4 +111,3 @@ services:
       - DATABASE_URL=postgresql://admin:admin@db:5432/transactions?schema=public
       - RPC_URL=http://rpc:8545
       - FUND_DISTRIBUTOR_ABI_FILE_PATH=/app/abi.json
-

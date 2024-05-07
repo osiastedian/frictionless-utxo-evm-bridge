@@ -13,6 +13,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Account {
+  recipientAddress String @id @unique
+  depositAddress   String @unique
+}
+
 model Transaction {
   id               String   @id @default(cuid())
   amount           String

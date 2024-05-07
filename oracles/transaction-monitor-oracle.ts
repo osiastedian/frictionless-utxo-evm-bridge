@@ -3,19 +3,15 @@ import axios, { AxiosResponse } from "axios";
 import amqplib from "amqplib";
 import { GetAPIStatusResponse, GetBlockAPIResponse } from "./types/blockbook";
 import { RegistrationTransaction } from "./types/registration";
+import { fundDistributorContract } from "./contract-utils";
+import { PrismaClient } from "@prisma/client";
+import { EventLog } from "ethers";
 
 dotenv.config();
 
 const BLOCKBOOK_URL = process.env.BLOCKBOOK_API_URL;
 const AMQP_URL = process.env.AMQP_URL;
-const API_URL = process.env.API_URL;
 const QUEUE_FOR_REGISTRATION = "for-registration-queue";
-
-console.log({
-  BLOCKBOOK_URL,
-  AMQP_URL,
-  API_URL,
-});
 
 if (!BLOCKBOOK_URL) {
   console.error("BLOCKBOOK_URL is not set");
@@ -27,17 +23,8 @@ if (!AMQP_URL) {
   process.exit(1);
 }
 
-if (!API_URL) {
-  console.error("API_URL is not set");
-  process.exit(1);
-}
-
 const blockBookApi = new axios.Axios({
   baseURL: BLOCKBOOK_URL,
-});
-
-const bridgeApi = new axios.Axios({
-  baseURL: API_URL,
 });
 
 const getLatestBlock = (): Promise<number> => {
@@ -52,10 +39,6 @@ const getBlockTxs = (blockNumber: number) => {
     const parsedResponse: GetBlockAPIResponse = JSON.parse(resp.data);
     return parsedResponse.txs;
   });
-};
-
-const getAccounts = () => {
-  return bridgeApi.get("/account").then((resp) => JSON.parse(resp.data).items);
 };
 
 const scanBlock = async (
@@ -85,13 +68,15 @@ const scanBlock = async (
   return validTxs;
 };
 
+const accounts: { depositAddress: string; recipientAddress: string }[] = [];
+
 const runRegistration = async (
   channel: amqplib.Channel,
   exit: () => void,
   lastBlock = -1
 ) => {
   console.group("\n======= NEW RUN =======");
-  const latestBlock = 1808858; // await getLatestBlock(); // Test block: 1808858
+  const latestBlock = await getLatestBlock(); // Test block: 1808858
   console.log("Latest Block:", latestBlock);
   if (latestBlock === lastBlock) {
     console.groupEnd();
@@ -101,8 +86,6 @@ const runRegistration = async (
 
   console.log("Fetching latest accounts..");
 
-  const accounts: { depositAddress: string; recipientAddress: string }[] =
-    await getAccounts();
   const accountMap = accounts.reduce((acc, account) => {
     acc[account.depositAddress] = account.recipientAddress;
     return acc;
@@ -136,6 +119,34 @@ const run = async () => {
   await channel.assertQueue(QUEUE_FOR_REGISTRATION, { durable: true });
 
   return new Promise((resolve) => {
+    const prisma = new PrismaClient();
+
+    fundDistributorContract
+      .queryFilter("RegisterAccount", 0)
+      .then((logs) =>
+        console.log({
+          registerAccountLogs: logs.map((log) => (log as EventLog).args),
+        })
+      );
+
+    fundDistributorContract.on(
+      "RegisterAccount",
+      (depositAddress, recipientAddress) => {
+        console.log("RegisterAccount", { depositAddress, recipientAddress });
+        accounts.push({ depositAddress, recipientAddress });
+
+        prisma.account
+          .create({
+            data: {
+              depositAddress,
+              recipientAddress,
+            },
+          })
+          .then((createdAccount) =>
+            console.log("Registed Account Successfully:", createdAccount)
+          );
+      }
+    );
     runRegistration(channel, () => {
       console.log("END");
       resolve(null);

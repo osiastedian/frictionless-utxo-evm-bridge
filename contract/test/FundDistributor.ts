@@ -74,12 +74,16 @@ describe.only("FundDistributor", () => {
 
     it("should allow registrar to register an account", async () => {
       const { fundDistributor, alice, bob } = await setup();
-      const rawMessage = "sys1qa2esanq7szrpckvlcnu6gwksc4p5xd4efjn408";
-      const signature = await bob.signMessage(rawMessage);
-      await fundDistributor
-        .connect(alice)
-        .registerAccount(bob.address, rawMessage, signature);
-      expect(await fundDistributor.receiverAddress(rawMessage)).to.equal(
+      const depositAddress = "sys1qa2esanq7szrpckvlcnu6gwksc4p5xd4efjn408";
+      const signature = await bob.signMessage(depositAddress);
+      await expect(
+        fundDistributor
+          .connect(alice)
+          .registerAccount(bob.address, depositAddress, signature)
+      )
+        .to.emit(fundDistributor, "RegisterAccount")
+        .withArgs(bob.address, depositAddress);
+      expect(await fundDistributor.receiverAddress(depositAddress)).to.equal(
         bob.address
       );
     });
@@ -137,7 +141,7 @@ describe.only("FundDistributor", () => {
           .registerTransaction(txId, depositAccount, amount)
       )
         .to.emit(fundDistributor, "TransactionPending")
-        .withArgs(bob.address, txId, depositorAddress, amount);
+        .withArgs(charlie.address, depositorAddress, txId, amount);
 
       await expect(
         fundDistributor
@@ -202,6 +206,14 @@ describe.only("FundDistributor", () => {
         [contractAddress, dolly.address],
         [`-${amountInEther}`, amountInEther]
       );
+    });
+
+    it("should should emit event after a successful payout", async () => {
+      const { fundDistributor, charlie, dolly } = await setup();
+
+      await expect(fundDistributor.connect(charlie).payout(txId))
+        .to.emit(fundDistributor, "TransactionComplete")
+        .withArgs(dolly.address, txId, amountInEther);
     });
 
     it("should not allow  payout for unreigstered transaction", async () => {

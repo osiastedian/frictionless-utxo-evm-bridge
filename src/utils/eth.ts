@@ -4,9 +4,10 @@ import fs from "fs";
 
 export const RPC_URL = process.env.RPC_URL || "http://localhost:8545";
 export const CHAIN_ID = process.env.CHAIN_ID || "31337";
+export const CHAIN_NAME = process.env.CHAIN_NAME || "hard-hat";
 export const provider = new ethers.JsonRpcProvider(RPC_URL, {
   chainId: parseInt(CHAIN_ID),
-  name: "hard-hat",
+  name: CHAIN_NAME,
 });
 export const signerPrivateKey = process.env.PRIVATE_KEY!;
 export const FUND_DISTRIBUTOR_ADDRESS = process.env.FUND_DISTRIBUTOR_ADDRESS!;
@@ -35,7 +36,6 @@ export const registerAccount = async (
   recipientAddress: string,
   signedMessage: string
 ): Promise<string | null> => {
-  console.log("params", depositAddress, recipientAddress, signedMessage);
   const call: TransactionResponse =
     await fundDistributorContract.registerAccount(
       recipientAddress,
