@@ -34,7 +34,6 @@ services:
   app:
     build:
       context: ./
-    command: npm run start
     volumes:
       - ./contract/artifacts/contracts/FundDistributor.sol/FundDistributor.json:/app/abi.json
     env_file:
