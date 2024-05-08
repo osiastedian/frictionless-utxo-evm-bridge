@@ -1,4 +1,4 @@
-import { networks } from "@/syscoin";
+import { networks } from "../syscoin";
 import { address as bitcoinAddressLib } from "bitcoinjs-lib";
 import { isAddress as ethersIsAddress, ethers, ZeroAddress } from "ethers";
 

@@ -20,16 +20,13 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Next.js collects completely anonymous telemetry data about general usage.
-# Learn more here: https://nextjs.org/telemetry
-# Uncomment the following line in case you want to disable telemetry during the build.
-ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV production
 
 RUN npx prisma generate
+RUN npm run build
 
 EXPOSE 3000
 
 ENV PORT 3000
 
-ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
+CMD ["npm", "run", "server"]
