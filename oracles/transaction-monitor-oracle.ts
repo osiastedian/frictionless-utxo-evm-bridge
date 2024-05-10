@@ -13,6 +13,9 @@ const BLOCKBOOK_URL = process.env.BLOCKBOOK_API_URL;
 const AMQP_URL = process.env.AMQP_URL;
 const QUEUE_FOR_REGISTRATION = "for-registration-queue";
 
+console.log("BLOCKBOOK_URL: ", BLOCKBOOK_URL);
+console.log("AMQP_URL: ", AMQP_URL);
+
 if (!BLOCKBOOK_URL) {
   console.error("BLOCKBOOK_URL is not set");
   process.exit(1);

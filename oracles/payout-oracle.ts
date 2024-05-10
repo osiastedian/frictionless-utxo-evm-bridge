@@ -1,11 +1,7 @@
 import dotenv from "dotenv";
-import {
-  ContractTransactionResponse,
-  Interface,
-  ethers,
-  parseUnits,
-} from "ethers";
+import { ContractTransactionResponse, ethers } from "ethers";
 import { getTransaction } from "./blockbook-utils";
+import { wallet, fundDistributorContract } from "./contract-utils";
 import fs from "fs";
 
 dotenv.config();
@@ -43,32 +39,18 @@ if (fs.existsSync(FUND_DISTRIBUTOR_ABI_FILE_PATH) === false) {
 }
 const BITCOIN_IN_SATOSHI = 100_000_000;
 
-console.log("Expected: 1000000");
-
-const abiRaw = fs.readFileSync(FUND_DISTRIBUTOR_ABI_FILE_PATH).toString();
-const { abi: abiJson } = JSON.parse(abiRaw);
-
-const abi = new Interface(abiJson);
-
-const provider = new ethers.JsonRpcProvider(RPC_URL, {
-  chainId: 31337,
-  name: "hard-hat",
-});
-const wallet = new ethers.Wallet(PAYOUT_REGISTRAR_PRIVATE_KEY, provider);
-const contract = new ethers.Contract(FUND_DISTRIBUTOR_ADDRESS, abi, wallet);
-
 console.log("Payout Oracle is running");
 
 const run = async () => {
-  const PAYOUT_REGISTRAR = await contract.PAYOUT_REGISTRAR();
-  const registrarRole = await contract.roles(wallet.address);
+  const PAYOUT_REGISTRAR = await fundDistributorContract.PAYOUT_REGISTRAR();
+  const registrarRole = await fundDistributorContract.roles(wallet.address);
   if (registrarRole !== PAYOUT_REGISTRAR) {
     console.error("Payout registrar is not authorized to register payouts");
     process.exit(1);
   }
 
   return new Promise((resolve) => {
-    contract.on(
+    fundDistributorContract.on(
       "TransactionPending",
       async (receiver, depositor, txId, amount: bigint) => {
         console.log("Event received", [receiver, depositor, txId, amount]);
@@ -91,7 +73,7 @@ const run = async () => {
           return;
         }
 
-        const call: ContractTransactionResponse = await contract.payout(txId);
+        const call: ContractTransactionResponse = await fundDistributorContract.payout(txId);
         call.wait(1).then(() => {
           console.log("Payout completed", [txId, amountInSats]);
         });

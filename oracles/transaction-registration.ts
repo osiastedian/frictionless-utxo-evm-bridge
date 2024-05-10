@@ -3,15 +3,10 @@ import dotenv from "dotenv";
 import amqplib from "amqplib";
 import axios from "axios";
 import { RegistrationTransaction } from "./types/registration";
-import {
-  ContractTransactionResponse,
-  Interface,
-  ethers,
-  formatUnits,
-  parseEther,
-} from "ethers";
+import { ContractTransactionResponse, formatUnits, parseEther } from "ethers";
 import { PrismaClient, Transaction } from "@prisma/client";
 import { Tx } from "./types/blockbook";
+import { fundDistributorContract } from "./contract-utils";
 
 dotenv.config();
 
@@ -75,17 +70,6 @@ const blockBookApi = new axios.Axios({
   baseURL: BLOCKBOOK_URL,
 });
 
-const abiRaw = fs.readFileSync(FUND_DISTRIBUTOR_ABI_FILE_PATH).toString();
-const { abi: abiJson } = JSON.parse(abiRaw);
-
-const abi = new Interface(abiJson);
-const provider = new ethers.JsonRpcProvider(RPC_URL, {
-  chainId: parseInt(CHAIN_ID),
-  name: "hard-hat",
-});
-const wallet = new ethers.Wallet(TRANSACTION_REGISTRAR_PRIVATE_KEY, provider);
-const contract = new ethers.Contract(FUND_DISTRIBUTOR_ADDRESS, abi, wallet);
-
 const getTransaction = async (txHash: string): Promise<Tx> => {
   return blockBookApi
     .get(`/v2/tx/${txHash}`)
@@ -135,9 +119,12 @@ const runTransactionVerifications = async (page = 0, size = 10) => {
 
   for (let transaction of forRegistration) {
     const amountInWei = transaction.amount;
-    const call: ContractTransactionResponse = await contract.getFunction(
-      "registerTransaction"
-    )(transaction.txId, transaction.depositAddress, amountInWei);
+    const call: ContractTransactionResponse =
+      await fundDistributorContract.getFunction("registerTransaction")(
+        transaction.txId,
+        transaction.depositAddress,
+        amountInWei
+      );
 
     const receipt = await call.wait(1);
 

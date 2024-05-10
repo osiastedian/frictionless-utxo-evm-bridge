@@ -87,7 +87,7 @@ services:
       - AMQP_URL=amqp://guest:guest@rabbitmq:5672
       - BLOCKBOOK_API_URL=https://blockbook.syscoin.org/api
       - DATABASE_URL=postgresql://admin:admin@db:5432/transactions?schema=public
-      - RPC_URL=http://rpc:8545
+      - RPC_URL=http://rpc:8545b
       - FUND_DISTRIBUTOR_ABI_FILE_PATH=/app/abi.json
 
   transaction-payout:
