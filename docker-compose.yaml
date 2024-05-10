@@ -43,7 +43,7 @@ services:
     depends_on:
       - db
       - rabbitmq
-      - rpc
+      # - rpc
     environment:
       - BLOCKBOOK_API_URL=https://blockbook.syscoin.org
       - DATABASE_URL=postgresql://admin:admin@db:5432/bridge?schema=public

@@ -1,6 +1,6 @@
 import { DescriptorsFactory } from "@bitcoinerlab/descriptors";
 import ecc from "@bitcoinerlab/secp256k1";
-import { networks } from "@/syscoin";
+import { networks } from "../syscoin";
 
 const network = networks.mainnet;
 const { Output } = DescriptorsFactory(ecc);
@@ -10,8 +10,6 @@ const multisigPubKeys = [
   "xpub6F8zphMorwJQTYqVn9tLqMLmsJhSTvjzLp7o4r8xFQN2Cav8WtAXGedGFcoKYT3VErXeT1UGjPeXkqeti8goAkWSkdpfxx1jNrtmewkhdxy",
   "xpub6EbZ83gpswWzhAQWGusyVSmivfns6borAw931sdmYzZjb28ZbKNt1wpuVsrhXvN8HF5PZ8n3pVridbYBqx4CnmLGiQpNGa6xtme2s5aYzve",
 ];
-
-const path = "m/84'/57'/0'/0";
 
 export const getDepositMultisigWallet = (index = 0) => {
   const pubKeys = multisigPubKeys.map(

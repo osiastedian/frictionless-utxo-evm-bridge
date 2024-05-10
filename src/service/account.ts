@@ -1,4 +1,4 @@
-import { getDepositMultisigWallet } from "@/utils/utxo";
+import { getDepositMultisigWallet } from "../utils/utxo";
 import { PrismaClient } from "@prisma/client";
 
 export const createAccount = async (recipientAddress: string) => {

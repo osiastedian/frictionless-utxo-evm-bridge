@@ -1,5 +1,3 @@
-"use client";
-
 import { Account as BridgeAccount } from "@prisma/client";
 import {
   QueryClient,
@@ -54,7 +52,6 @@ const Account: React.FC<{ children: ReactNode }> = ({ children }) => {
   const chainId = useChainId();
 
   const { switchChain } = useSwitchChain({});
-  const { signMessageAsync } = useSignMessage();
 
   if (chainId !== targetChainId) {
     return (
@@ -99,6 +96,10 @@ const SignDepositAccount: React.FC<{ depositAddress: string }> = ({
       return fetch(`/api/account/${address}`, {
         body: JSON.stringify({ signedMessage }),
         method: "PUT",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
       });
     },
   });
@@ -139,9 +140,13 @@ const QuerySysAccount = () => {
   const { mutateAsync: requestAccount } = useMutation<BridgeAccount>({
     mutationKey: ["bridge-account", address, "create"],
     mutationFn: () => {
-      return fetch("/api/account", {
+      return fetch("/api/account/", {
         body: JSON.stringify({ recipientAddress: address }),
         method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
       }).then((resp) => resp.json());
     },
     onSuccess: () => {
