@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, json } from "express";
 import {
   isValidEthAddress,
   verifySignedMessage,
@@ -10,7 +10,7 @@ import {
 } from "../../service/account";
 import { registerAccount } from "../../utils/eth";
 
-const router = Router();
+const router = Router().use(json());
 
 router.post("/", async (req, res) => {
   const { recipientAddress } = req.body;
