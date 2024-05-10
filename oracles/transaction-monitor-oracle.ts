@@ -126,22 +126,6 @@ const run = async () => {
   return new Promise((resolve) => {
     const prisma = new PrismaClient();
 
-    fundDistributorContract.queryFilter("RegisterAccount", 0).then((logs) => {
-      console.log({
-        registerAccountLogs: logs.map((log) => (log as EventLog).args),
-      });
-      const registeredAccounts = logs.map((log: any) => {
-        const [recipientAddress, depositAddress] = log.args as string[];
-        return {
-          recipientAddress,
-          depositAddress,
-        };
-      });
-      prisma.account.createMany({
-        data: registeredAccounts,
-      });
-    });
-
     fundDistributorContract.on(
       "RegisterAccount",
       (depositAddress, recipientAddress) => {
@@ -156,7 +140,7 @@ const run = async () => {
             },
           })
           .then((createdAccount) =>
-            console.log("Registed Account Successfully:", createdAccount)
+            console.log("Registered Account Successfully:", createdAccount)
           );
       }
     );
