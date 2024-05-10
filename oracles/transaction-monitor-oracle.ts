@@ -87,8 +87,10 @@ const runRegistration = async (
     return;
   }
 
-  console.log("Fetching latest accounts..");
+  const prisma = new PrismaClient();
 
+  console.log("Fetching latest accounts..");
+  const accounts = await prisma.account.findMany({});
   const accountMap = accounts.reduce((acc, account) => {
     acc[account.depositAddress] = account.recipientAddress;
     return acc;
@@ -124,13 +126,21 @@ const run = async () => {
   return new Promise((resolve) => {
     const prisma = new PrismaClient();
 
-    fundDistributorContract
-      .queryFilter("RegisterAccount", 0)
-      .then((logs) =>
-        console.log({
-          registerAccountLogs: logs.map((log) => (log as EventLog).args),
-        })
-      );
+    fundDistributorContract.queryFilter("RegisterAccount", 0).then((logs) => {
+      console.log({
+        registerAccountLogs: logs.map((log) => (log as EventLog).args),
+      });
+      const registeredAccounts = logs.map((log: any) => {
+        const [recipientAddress, depositAddress] = log.args as string[];
+        return {
+          recipientAddress,
+          depositAddress,
+        };
+      });
+      prisma.account.createMany({
+        data: registeredAccounts,
+      });
+    });
 
     fundDistributorContract.on(
       "RegisterAccount",

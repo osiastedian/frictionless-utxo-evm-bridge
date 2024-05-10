@@ -20,7 +20,7 @@ import {
 } from "wagmi";
 import { injected } from "wagmi/connectors";
 
-const targetChainId = 31337;
+const targetChainId = 57000;
 
 export const config = createConfig({
   chains: [
@@ -38,9 +38,24 @@ export const config = createConfig({
         },
       },
     },
+    {
+      id: 57000,
+      name: "Rollux Testnet",
+      nativeCurrency: {
+        decimals: 18,
+        name: "Syscoin",
+        symbol: "SYS",
+      },
+      rpcUrls: {
+        default: {
+          http: ["https://rpc-tanenbaum.rollux.com"],
+        },
+      },
+    },
   ],
   transports: {
     "31337": http(),
+    "57000": http(),
   },
 });
 
