@@ -1,13 +1,14 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
-import hre, { ethers } from "hardhat";
+import { ethers } from "hardhat";
 
 const FundDistributorModule = buildModule("FundDistributorModule", (m) => {
-  const owner = m.getAccount(1);
-  const accountRegistrar = m.getAccount(2);
-  const transactionRegistrar = m.getAccount(3);
-  const payoutRegistrar = m.getAccount(4);
+  const owner = m.getAccount(0);
+  const accountRegistrar = m.getAccount(1);
+  const transactionRegistrar = m.getAccount(2);
+  const payoutRegistrar = m.getAccount(3);
 
   const fundDistributor = m.contract("FundDistributor", [], { from: owner });
+  const initialFund = ethers.parseEther("0.001");
 
   const accountRegistrarRole = m.staticCall(
     fundDistributor,
@@ -31,16 +32,6 @@ const FundDistributorModule = buildModule("FundDistributorModule", (m) => {
     { id: "payoutRegistrar" }
   );
 
-  m.send(
-    "fundContract",
-    fundDistributor,
-    ethers.parseEther("1000"),
-    undefined,
-    {
-      from: owner,
-    }
-  );
-
   m.call(
     fundDistributor,
     "addRegistrar",
@@ -62,12 +53,14 @@ const FundDistributorModule = buildModule("FundDistributorModule", (m) => {
     { from: owner, id: "addPayoutRegistrar" }
   );
 
-  m.call(
-    fundDistributor,
-    "increaseLimit",
-    [payoutRegistrar, ethers.parseEther("1000")],
-    { from: owner, id: "increaseLimitForPayout" }
-  );
+  m.send("fundContract", fundDistributor, initialFund, undefined, {
+    from: owner,
+  });
+
+  m.call(fundDistributor, "increaseLimit", [payoutRegistrar, initialFund], {
+    from: owner,
+    id: "increaseLimitForPayout",
+  });
 
   return { fundDistributor };
 });
