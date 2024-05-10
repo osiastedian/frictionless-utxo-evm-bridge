@@ -31,6 +31,7 @@ router.post("/", async (req, res) => {
     account = await createAccount(recipientAddress);
     return res.json(account).status(201);
   } catch (error) {
+    console.error({ error });
     return res.status(500).json({ message: "Internal server  error" });
   }
 });
