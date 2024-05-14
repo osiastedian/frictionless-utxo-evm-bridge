@@ -18,6 +18,4 @@ COPY ./tsconfig.json ./tsconfig.json
 
 COPY ./docker/entrypoint.sh /usr/local/bin
 
-RUN npx hardhat compile
-
 ENTRYPOINT ["/bin/sh", "/usr/local/bin/entrypoint.sh"]

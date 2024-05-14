@@ -28,6 +28,8 @@ services:
     build:
       context: ./contract
       dockerfile: Dockerfile
+    env_file:
+      - ./contract/.env
     ports:
       - 8545:8545
 
@@ -42,19 +44,19 @@ services:
       - 3000:3000
     depends_on:
       - db
-      - rabbitmq
-      # - rpc
+      - rpc
     environment:
-      - BLOCKBOOK_API_URL=https://blockbook.syscoin.org
+      - BLOCKBOOK_API_URL=https://blockbook-dev.syscoin.org/api
       - DATABASE_URL=postgresql://admin:admin@db:5432/bridge?schema=public
       - RPC_URL=http://rpc:8545
       - FUND_DISTRIBUTOR_ABI_FILE_PATH=/app/abi.json
+      - IS_TESTNET=true
 
   transaction-monitor:
     build:
       context: ./oracles
       dockerfile: Dockerfile
-    command: npm run start-transaction-monitor
+    command: transaction-monitor
     env_file:
       - ./oracles/.env.docker.transaction-registration
     volumes:
@@ -63,29 +65,32 @@ services:
     depends_on:
       - rabbitmq
       - rpc
+      - db
     environment:
       - AMQP_URL=amqp://guest:guest@rabbitmq:5672
-      - BLOCKBOOK_API_URL=https://blockbook.syscoin.org/api
+      - BLOCKBOOK_API_URL=https://blockbook-dev.syscoin.org/api
       - RPC_URL=http://rpc:8545
       - FUND_DISTRIBUTOR_ABI_FILE_PATH=/app/abi.json
+      - DATABASE_URL=postgresql://admin:admin@db:5432/transactions?schema=public
 
   transaction-registration:
     build:
       context: ./oracles
       dockerfile: Dockerfile
-    command: npm run start-transaction-registration
+    command: "transaction-registration"
     volumes:
       - ./oracles/transaction-registration.ts:/app/transaction-registration.ts
       - ./contract/artifacts/contracts/FundDistributor.sol/FundDistributor.json:/app/abi.json
     depends_on:
       - rabbitmq
       - rpc
+      - db
     env_file:
       - ./oracles/.env.docker.transaction-registration
     environment:
       - BRIDGE_API_URL=http://app:3000/api
       - AMQP_URL=amqp://guest:guest@rabbitmq:5672
-      - BLOCKBOOK_API_URL=https://blockbook.syscoin.org/api
+      - BLOCKBOOK_API_URL=https://blockbook-dev.syscoin.org/api
       - DATABASE_URL=postgresql://admin:admin@db:5432/transactions?schema=public
       - RPC_URL=http://rpc:8545b
       - FUND_DISTRIBUTOR_ABI_FILE_PATH=/app/abi.json
@@ -106,7 +111,7 @@ services:
     environment:
       - BRIDGE_API_URL=http://app:3000/api
       - AMQP_URL=amqp://guest:guest@rabbitmq:5672
-      - BLOCKBOOK_API_URL=https://blockbook.syscoin.org/api
+      - BLOCKBOOK_API_URL=https://blockbook-dev.syscoin.org/api
       - DATABASE_URL=postgresql://admin:admin@db:5432/transactions?schema=public
       - RPC_URL=http://rpc:8545
       - FUND_DISTRIBUTOR_ABI_FILE_PATH=/app/abi.json

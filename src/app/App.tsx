@@ -20,7 +20,7 @@ import {
 } from "wagmi";
 import { injected } from "wagmi/connectors";
 
-const targetChainId = 57000;
+const targetChainId = 31337;
 
 export const config = createConfig({
   chains: [

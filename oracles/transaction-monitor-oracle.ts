@@ -5,7 +5,6 @@ import { GetAPIStatusResponse, GetBlockAPIResponse } from "./types/blockbook";
 import { RegistrationTransaction } from "./types/registration";
 import { fundDistributorContract } from "./contract-utils";
 import { PrismaClient } from "@prisma/client";
-import { EventLog } from "ethers";
 
 dotenv.config();
 

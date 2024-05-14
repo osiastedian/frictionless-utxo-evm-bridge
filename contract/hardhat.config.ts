@@ -11,9 +11,6 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       chainId: 31337,
-      accounts: {
-        mnemonic,
-      },
     },
     rolluxTestnet: {
       url: "https://rpc-tanenbaum.rollux.com",

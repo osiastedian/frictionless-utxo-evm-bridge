@@ -1,14 +1,12 @@
 import { Router, json } from "express";
-import {
-  isValidEthAddress,
-  verifySignedMessage,
-} from "../../utils/validations";
+import { isValidEthAddress, verifySignedMessage } from "../utils/validations";
 import {
   createAccount,
   getAccountByRecipientAddress,
   addSignedMessage,
-} from "../../service/account";
-import { registerAccount } from "../../utils/eth";
+  getAccountTransactions,
+} from "../service/account";
+import { registerAccount } from "../utils/eth";
 
 const router = Router().use(json());
 
@@ -90,6 +88,20 @@ router.get("/:signerAddress", async (req, res) => {
   }
 
   return res.json(account);
+});
+
+router.get("/:signerAddress/transactions", async (req, res) => {
+  const { signerAddress } = req.params;
+
+  const account = await getAccountByRecipientAddress(signerAddress);
+
+  if (!account) {
+    return res.status(404).json({ message: "Account not found" });
+  }
+
+  const transactions = (await getAccountTransactions(account.id))?.transactions;
+
+  res.status(200).json(transactions ?? []);
 });
 
 export default router;

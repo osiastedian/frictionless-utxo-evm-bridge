@@ -1,8 +1,9 @@
 import { getDepositMultisigWallet } from "../utils/utxo";
 import { PrismaClient } from "@prisma/client";
 
+const prisma = new PrismaClient();
+
 export const createAccount = async (recipientAddress: string) => {
-  const prisma = new PrismaClient();
   const count = await prisma.account.count();
   const wallet = getDepositMultisigWallet(count);
   const account = await prisma.account.create({
@@ -15,10 +16,21 @@ export const createAccount = async (recipientAddress: string) => {
 };
 
 export const getAccountByRecipientAddress = async (address: string) => {
-  const prisma = new PrismaClient();
   const account = await prisma.account.findUnique({
     where: {
       recipientAddress: address,
+    },
+  });
+  return account;
+};
+
+export const getAccountTransactions = async (id: string) => {
+  const account = await prisma.account.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      transactions: true,
     },
   });
   return account;
@@ -29,7 +41,6 @@ export const addSignedMessage = async (
   signedMessage: string,
   registrationHash: string
 ) => {
-  const prisma = new PrismaClient();
   const account = await prisma.account.update({
     where: {
       id,
@@ -44,7 +55,6 @@ export const addSignedMessage = async (
 };
 
 export const getAccounts = async (page = 1, size = 100) => {
-  const prisma = new PrismaClient();
   const account = await prisma.account.findMany({
     skip: (page - 1) * size,
     take: size,

@@ -6,6 +6,6 @@ COPY ./ /app
 
 RUN npm ci
 
-RUN npx prisma generate
+ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
 
-CMD ["npm","run","start-transaction-monitor"]
+CMD "transaction-monitor"

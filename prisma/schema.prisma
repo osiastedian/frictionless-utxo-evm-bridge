@@ -14,25 +14,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Transfer {
-  id                     String   @id @default(uuid())
-  depositTransactionHash String?  @unique
-  receiptTransactionHash String?  @unique
-  amount                 String
-  status                 String
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
-  account                Account? @relation(fields: [accountId], references: [id])
-  accountId              String?
-}
-
 model Account {
-  id               String     @id @default(uuid())
-  depositAddress   String     @unique
-  recipientAddress String     @unique
+  id               String        @id @default(uuid())
+  depositAddress   String        @unique
+  recipientAddress String        @unique
   signedMessage    String?
   signedAt         DateTime?
   registrationHash String?
-  createdAt        DateTime   @default(now())
-  transfers        Transfer[]
+  createdAt        DateTime      @default(now())
+  transactions     Transaction[]
+}
+
+model Transaction {
+  id               String   @id @unique
+  status           String   @default("pending")
+  depositAddress   String
+  recipientAddress String
+  amount           String
+  isUtxoUsed       Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  Account          Account? @relation(fields: [depositAddress], references: [depositAddress])
 }

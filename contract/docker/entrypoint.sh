@@ -3,6 +3,8 @@
 # Change to the correct directory
 cd /app;
 
+npx hardhat compile;
+
 # Start hardhat node as a background process
 npm run start-local &
 
