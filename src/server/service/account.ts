@@ -6,6 +6,7 @@ const prisma = new PrismaClient();
 export const createAccount = async (recipientAddress: string) => {
   const count = await prisma.account.count();
   const wallet = getDepositMultisigWallet(count);
+
   const account = await prisma.account.create({
     data: {
       depositAddress: wallet.address,

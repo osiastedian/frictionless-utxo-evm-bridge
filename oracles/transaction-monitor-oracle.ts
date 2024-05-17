@@ -125,24 +125,27 @@ const run = async () => {
   return new Promise((resolve) => {
     const prisma = new PrismaClient();
 
-    fundDistributorContract.on(
-      "RegisterAccount",
-      (depositAddress, recipientAddress) => {
-        console.log("RegisterAccount", { depositAddress, recipientAddress });
-        accounts.push({ depositAddress, recipientAddress });
+    fundDistributorContract.on("RegisterAccount", (ethAddress, sysAddress) => {
+      console.log("RegisterAccount", {
+        depositAddress: sysAddress,
+        recipientAddress: ethAddress,
+      });
+      accounts.push({
+        depositAddress: sysAddress,
+        recipientAddress: ethAddress,
+      });
 
-        prisma.account
-          .create({
-            data: {
-              depositAddress,
-              recipientAddress,
-            },
-          })
-          .then((createdAccount) =>
-            console.log("Registered Account Successfully:", createdAccount)
-          );
-      }
-    );
+      prisma.account
+        .create({
+          data: {
+            depositAddress: sysAddress,
+            recipientAddress: ethAddress,
+          },
+        })
+        .then((createdAccount) =>
+          console.log("Registered Account Successfully:", createdAccount)
+        );
+    });
     runRegistration(channel, () => {
       console.log("END");
       resolve(null);

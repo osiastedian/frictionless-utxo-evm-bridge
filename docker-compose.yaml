@@ -99,7 +99,7 @@ services:
     build:
       context: ./oracles
       dockerfile: Dockerfile
-    command: npm run start-transaction-payout
+    command: transaction-payout
     volumes:
       - ./oracles/payout-oracle.ts:/app/payout-oracle.ts
       - ./contract/artifacts/contracts/FundDistributor.sol/FundDistributor.json:/app/abi.json
