@@ -32,11 +32,12 @@ model Transaction {
 }
 
 model Payout {
-  id                   String      @id
-  txHash               String      @unique
-  depositTransaction   Transaction @relation(fields: [depositTransactionId], references: [id])
+  id                   String      @id @unique @default(cuid())
+  txHash               String?     @unique
+  depositTransaction   Transaction @relation(fields: [depositTransactionId], references: [txId])
   depositTransactionId String      @unique
   status               String      @default("pending")
+  error                String?
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt
 }

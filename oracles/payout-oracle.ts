@@ -2,12 +2,15 @@ import dotenv from "dotenv";
 import { ContractTransactionResponse, ethers } from "ethers";
 import { getTransaction } from "./blockbook-utils";
 import { wallet, fundDistributorContract } from "./contract-utils";
+import { PrismaClient } from "@prisma/client";
 
 dotenv.config();
 
 const BITCOIN_IN_SATOSHI = 100_000_000;
 
-console.log("Payout Oracle is running");
+console.log("Payout Oracle is running:", wallet.address);
+
+const prisma = new PrismaClient();
 
 const run = async () => {
   const PAYOUT_REGISTRAR = await fundDistributorContract.PAYOUT_REGISTRAR();
@@ -41,11 +44,57 @@ const run = async () => {
           return;
         }
 
+        let transaction = await prisma.payout.create({
+          data: {
+            depositTransactionId: txId,
+            status: "pending",
+          },
+        });
+
         const call: ContractTransactionResponse =
           await fundDistributorContract.payout(txId);
-        call.wait(1).then(() => {
-          console.log("Payout completed", [txId, amountInSats]);
-        });
+        call
+          .wait(1)
+          .then(async (receipt) => {
+            if (!receipt) {
+              console.error("Failed to Payout Receipt");
+              transaction = await prisma.payout.update({
+                where: {
+                  id: transaction.id,
+                  depositTransactionId: txId,
+                },
+                data: {
+                  status: "failed",
+                },
+              });
+              return;
+            }
+            console.log("Payout completed", [txId, amountInSats]);
+            transaction = await prisma.payout.update({
+              where: {
+                id: transaction.id,
+                depositTransactionId: txId,
+              },
+              data: {
+                txHash: receipt?.hash,
+                status: "complete",
+              },
+            });
+          })
+          .catch(async (reason: string) => {
+            console.error("Failed Payout Reason: ", reason);
+            const failedTransaction = await prisma.payout.update({
+              data: {
+                error: reason,
+                status: "failed",
+              },
+              where: {
+                id: transaction.id,
+                depositTransactionId: txId,
+              },
+            });
+            console.log("Failed Payout:", failedTransaction);
+          });
       }
     );
   });

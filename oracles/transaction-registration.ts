@@ -181,6 +181,7 @@ const run = async () => {
       );
 
       if (!isValidTx) {
+        console.error("Invalid transaction", { parsedContent });
         console.groupEnd();
         return;
       }
@@ -196,7 +197,7 @@ const run = async () => {
         return;
       }
 
-      await prisma.transaction.create({
+      const newTransaction = await prisma.transaction.create({
         data: {
           txId: parsedContent.txId,
           recipientAddress: parsedContent.recipient,
@@ -205,6 +206,8 @@ const run = async () => {
           confirmations: tx.confirmations,
         },
       });
+
+      console.log("Transaction registered:", newTransaction);
 
       console.groupEnd();
     },
