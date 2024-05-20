@@ -158,11 +158,14 @@ const runTransactionVerifications = async (page = 0, size = 10) => {
     console.log("Transaction registered", { receipt, updatedTransaction });
   }
 
-  if (transactions.length === size) {
-    setTimeout(() => {
+  const hasNextPage = transactions.length === size;
+
+  setTimeout(
+    () => {
       runTransactionVerifications(page + 1);
-    }, 10_000);
-  }
+    },
+    hasNextPage ? 10_000 : 60_000
+  );
 };
 
 const run = async () => {
