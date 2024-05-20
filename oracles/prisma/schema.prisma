@@ -28,4 +28,15 @@ model Transaction {
   registered       Boolean  @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  Payout           Payout?
+}
+
+model Payout {
+  id                   String      @id
+  txHash               String      @unique
+  depositTransaction   Transaction @relation(fields: [depositTransactionId], references: [id])
+  depositTransactionId String      @unique
+  status               String      @default("pending")
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
 }
