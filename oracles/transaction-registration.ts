@@ -81,11 +81,12 @@ const getTransaction = async (txHash: string): Promise<Tx> => {
     .then((resp) => JSON.parse(resp.data));
 };
 
+const prisma = new PrismaClient();
+
 const runTransactionVerifications = async (page = 0, size = 10) => {
   console.log(
     `Running Transaction Verifications: (page: ${page}, size: ${size} )`
   );
-  const prisma = new PrismaClient();
 
   const transactions = await prisma.transaction.findMany({
     where: {
@@ -211,7 +212,6 @@ const run = async () => {
         return;
       }
 
-      const prisma = new PrismaClient();
       const existingTransaction = await prisma.transaction.findFirst({
         where: { txId: parsedContent.txId },
       });

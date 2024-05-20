@@ -70,7 +70,7 @@ const scanBlock = async (
   return validTxs;
 };
 
-const accounts: { depositAddress: string; recipientAddress: string }[] = [];
+const prisma = new PrismaClient();
 
 const runRegistration = async (
   channel: amqplib.Channel,
@@ -85,8 +85,6 @@ const runRegistration = async (
     setTimeout(() => runRegistration(channel, exit, lastBlock), 20_000);
     return;
   }
-
-  const prisma = new PrismaClient();
 
   console.log("Fetching latest accounts..");
   const accounts = await prisma.account.findMany({});
@@ -123,14 +121,8 @@ const run = async () => {
   await channel.assertQueue(QUEUE_FOR_REGISTRATION, { durable: true });
 
   return new Promise((resolve) => {
-    const prisma = new PrismaClient();
-
     fundDistributorContract.on("RegisterAccount", (ethAddress, sysAddress) => {
       console.log("RegisterAccount", {
-        depositAddress: sysAddress,
-        recipientAddress: ethAddress,
-      });
-      accounts.push({
         depositAddress: sysAddress,
         recipientAddress: ethAddress,
       });
