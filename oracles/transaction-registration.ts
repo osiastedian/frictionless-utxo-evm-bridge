@@ -159,13 +159,12 @@ const runTransactionVerifications = async (page = 0, size = 10) => {
   }
 
   const hasNextPage = transactions.length === size;
+  const nextPage = hasNextPage ? page + 1 : 0;
+  const timeOut = hasNextPage ? 10_000 : 60_000;
 
-  setTimeout(
-    () => {
-      runTransactionVerifications(page + 1);
-    },
-    hasNextPage ? 10_000 : 60_000
-  );
+  setTimeout(() => {
+    runTransactionVerifications(nextPage);
+  }, timeOut);
 };
 
 const run = async () => {
