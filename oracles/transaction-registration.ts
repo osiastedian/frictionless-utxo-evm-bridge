@@ -3,7 +3,12 @@ import dotenv from "dotenv";
 import amqplib from "amqplib";
 import axios from "axios";
 import { RegistrationTransaction } from "./types/registration";
-import { ContractTransactionResponse, formatUnits, parseEther } from "ethers";
+import {
+  ContractTransactionReceipt,
+  ContractTransactionResponse,
+  formatUnits,
+  parseEther,
+} from "ethers";
 import { PrismaClient, Transaction } from "@prisma/client";
 import { Tx } from "./types/blockbook";
 import { fundDistributorContract } from "./contract-utils";
@@ -119,20 +124,38 @@ const runTransactionVerifications = async (page = 0, size = 10) => {
 
   for (let transaction of forRegistration) {
     const amountInWei = transaction.amount;
-    const call: ContractTransactionResponse =
-      await fundDistributorContract.getFunction("registerTransaction")(
-        transaction.txId,
-        transaction.depositAddress,
-        amountInWei
-      );
 
-    const receipt = await call.wait(1);
+    const existingRegistration = await fundDistributorContract.getFunction(
+      "txRegistration"
+    )(transaction.txId);
 
-    if (!receipt || receipt.status === 0) {
-      console.error("Transaction failed", { transaction });
+    let receipt: ContractTransactionReceipt | null = null;
+
+    if (!existingRegistration) {
+      const call: ContractTransactionResponse =
+        await fundDistributorContract.getFunction("registerTransaction")(
+          transaction.txId,
+          transaction.depositAddress,
+          amountInWei
+        );
+
+      receipt = await call.wait(1);
+
+      if (!receipt || receipt.status === 0) {
+        console.error("Transaction failed", { transaction });
+        return;
+      }
     }
+    const updatedTransaction = await prisma.transaction.update({
+      data: {
+        registered: true,
+      },
+      where: {
+        id: transaction.id,
+      },
+    });
 
-    console.log("Transaction registered", { receipt });
+    console.log("Transaction registered", { receipt, updatedTransaction });
   }
 
   if (transactions.length === size) {
