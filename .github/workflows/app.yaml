@@ -8,6 +8,9 @@ on:
 
 jobs:
   docker:
+    permissions: 
+      contents: read
+      packages: write
     runs-on: ubuntu-latest
     steps:
       - name: Set up QEMU
@@ -21,7 +24,7 @@ jobs:
         with:
           # list of Docker images to use as base name for tags
           images: |
-            ghcr.io/osiastedian/syscoin-utxo-rollux-app
+            ghcr.io/SYS-Labs/rollux-utxo-bridge-app
           # generate Docker tags based on the following events/attributes
           tags: |
             type=schedule
