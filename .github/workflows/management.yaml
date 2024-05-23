@@ -27,7 +27,7 @@ jobs:
         name: app-build
         path: dist
 
-  docker:
+  push:
     needs: [build]
     permissions: 
       contents: read
