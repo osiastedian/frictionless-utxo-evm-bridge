@@ -49,6 +49,21 @@ const scanBlock = async (
 ): Promise<RegistrationTransaction[]> => {
   const latestBlockTxs = await getBlockTxs(blockNumber);
   const validTxs: RegistrationTransaction[] = [];
+  // const voutAccounts = latestBlockTxs
+  //   .map((tx) => tx.vout.map((out) => out.addresses))
+  //   .flat(2)
+  //   .filter((address) => typeof address === "string");
+
+  // console.log("Vout Accounts: ", voutAccounts);
+
+  // prisma.account.findMany({
+  //   where: {
+  //     depositAddress: {
+  //       in: voutAccounts,
+  //     },
+  //   },
+  // });
+
   latestBlockTxs.forEach((tx) => {
     const { vout } = tx;
     vout

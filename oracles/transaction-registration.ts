@@ -84,6 +84,7 @@ const getTransaction = async (txHash: string): Promise<Tx> => {
 const prisma = new PrismaClient();
 
 const runTransactionVerifications = async (page = 0, size = 10) => {
+  await prisma.$connect();
   console.log(
     `Running Transaction Verifications: (page: ${page}, size: ${size} )`
   );
@@ -100,6 +101,7 @@ const runTransactionVerifications = async (page = 0, size = 10) => {
   });
 
   if (transactions.length === 0) {
+    await prisma.$disconnect();
     setTimeout(() => {
       runTransactionVerifications();
     }, 60_000);
@@ -158,6 +160,7 @@ const runTransactionVerifications = async (page = 0, size = 10) => {
 
     console.log("Transaction registered", { receipt, updatedTransaction });
   }
+  await prisma.$disconnect();
 
   const hasNextPage = transactions.length === size;
   const nextPage = hasNextPage ? page + 1 : 0;
